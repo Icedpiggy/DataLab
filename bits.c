@@ -1,7 +1,7 @@
 /* 
  * CS:APP Data Lab 
  * 
- * <Please put your name and userid here>
+ * 林诗航 24300240228
  * 
  * bits.c - Source file with your solutions to the Lab.
  *          This is the file you will hand in to your instructor.
@@ -146,7 +146,8 @@ NOTES:
  *   Rating: 1
  */
 int signMask(void) {
-  return 1;
+  /* 直接将 1 左移 31 位即可 */
+  return 1 << 31;
 }
 
 // P2
@@ -158,7 +159,8 @@ int signMask(void) {
  *   Rating: 2
  */
 int bitXor(int x, int y) {
-	return 2;
+  /* 异或结果中这一位为 1 也就是既不为 2 也不为 0 */
+	return ~(x & y) & ~(~x & ~y);
 }
 
 // P3
@@ -170,7 +172,8 @@ int bitXor(int x, int y) {
  *   Rating: 3
  */
 int negativePart(int x){
-  return 3;
+  /* 由于使用算术右移，那么 x >> 31 在 x >= 0 时为 0，在 x < 0 时为 0xffffffff，另使用 ~x + 1 得到 -x*/
+  return (x >> 31) & (~x + 1);
 }
 
 
@@ -185,7 +188,11 @@ int negativePart(int x){
  *   Rating: 4
  */
 int copyByteWithin(int x, int src, int dst) {
-  return 4;
+  /* 将 src 与 dst 的字节提取，直接异或上去即可 */
+  src = src << 3;
+  dst = dst << 3;
+  int B = ((x >> src) ^ (x >> dst)) & 0xff;
+  return x ^ (B << dst);
 }
 
 // P5
@@ -198,7 +205,10 @@ int copyByteWithin(int x, int src, int dst) {
  *   Rating: 4
  */
 int logicalShift(int x, int n) {
-  return 5;
+  /* 逻辑右移，需要把符号位删掉，在算术右移的基础上仅保留低 32 - n 位 */
+  int s = (x >> 31) & 1;
+  x = x ^ (s << 31);
+  return x >> n | (s << (32 + ~n)) ;
 }
 
 // P6
@@ -210,7 +220,11 @@ int logicalShift(int x, int n) {
  *   Rating: 4
  */
 int swapNibblePairs(int x) {
-  return 6;
+  /* 创建 0x0f0f0f0f 的 mask，将两部分分别逻辑左移逻辑右移 4 位再合起来，无需处理符号位 */
+  int msk = 0x0f;
+  msk = msk | msk << 8;
+  msk = msk | msk << 16;
+  return ((x & msk) << 4) | ((x >> 4) & msk);
 }
 
 // P7
@@ -223,7 +237,9 @@ int swapNibblePairs(int x) {
  *   Rating: 4
  */
 int secondLowestZeroBit(int x) {
-  return 7;
+  /* x 的 low1bit 为 x & -x = x & (~x + 1)，那么 low0bit 为 ~x & (x + 1)，先得到将末位 0 置 1 的 y，再做一次 low1bit */
+  int y = x ^ (~x & (x + 1));
+  return ~y & (y + 1);
 }
 
 // P8
@@ -236,7 +252,13 @@ int secondLowestZeroBit(int x) {
  *   Rating: 5
  */
 int oddParity(int x) {
-  return 8;
+  /* 将 x 前后 16b 拆开并异或为 16b 数不改变 parity，重复直到压成 1b，为了节省运算数量使用左移，没有必要将 x 的后若干位清空 */
+  x = x ^ (x << 16);
+  x = x ^ (x << 8);
+  x = x ^ (x << 4);
+  x = x ^ (x << 2);
+  x = x ^ (x << 1);
+  return (~x >> 31) & 1;
 }
 
 // P9
@@ -249,7 +271,10 @@ int oddParity(int x) {
  *   Rating: 5
  */
 int rotateRightBits(int x, int n) {
-  return 9;
+  /* 将符号位单独处理，将不重叠的三部分合并即可 */
+  int s = (x >> 31) & 1;
+  x = x ^ (s << 31);
+  return (x >> n) | (x << (33 + ~n)) | (s << (32 + ~n));
 }
 
 // P10
@@ -264,7 +289,13 @@ int rotateRightBits(int x, int n) {
  *   Rating: 5
  */
 int roundEvenPow2(int x, int n) {
-  return 10;
+  /* 加上 2^(n-1)，若后 n bit 为 0，则第 n 位置零 */
+  int _1 = ~0;
+  int msk = (1 << n) + _1;
+  x = x + (1 << (n + _1));
+  int a = !(x & msk);
+  x = (x ^ (x & (a << n))) & ~msk;
+  return x;
 }
 
 // P11
@@ -280,7 +311,15 @@ int roundEvenPow2(int x, int n) {
  *   Rating: 5
  */
 int midpointTowardFirst(int x, int y) {
-  return 11;
+  /* 即计算 C 语言下的 x + (y - x) / 2，使用 32b + 1b 的数，绝对值向下取整 */
+  int d1b = (y & 1) + ~(x & 1) + 1;
+  int d32b = (y >> 1) + ~(x >> 1) + 1;
+  int o = d1b >> 1;
+  d32b = d32b + o;
+  d1b = d1b + ~(o << 1) + 1;
+  int msk = ((!!d32b << 31) >> 31) & ((d32b >> 31) ^ (d1b >> 31));
+  int d = d32b + (msk & d1b);
+  return x + d;
 }
 
 
@@ -294,7 +333,17 @@ int midpointTowardFirst(int x, int y) {
  *   Rating: 7
  */
 int isBetweenEitherOrder(int x, int a, int b) {
-  return 12;
+  /* 即 a-x b-x 异号或其中一个为 0，但是 a 与 -x 同号时可以直接确定 a-x 的符号，异号时计算不会溢出，注意 -x 符号的求法，避免 0x80000000 问题 */
+  int xz = !x, az = !a, bz = !b;
+  int xs = ((!xz << 31) >> 31) & ~(x >> 31), as = a >> 31, bs = b >> 31;
+  int axsc = (!(xs ^ as)) | xz | az, bxsc = (!(xs ^ bs)) | xz | bz;
+  axsc = (axsc << 31) >> 31;
+  bxsc = (bxsc << 31) >> 31;
+
+  int axs = (axsc & (xs | as)) | (~axsc & ((a + ~x + 1) >> 31));
+  int bxs = (bxsc & (xs | bs)) | (~bxsc & ((b + ~x + 1) >> 31));
+  
+  return (!(a ^ x)) | (!(b ^ x)) | ((axs ^ bxs) & 1);
 }
 
 // P13
@@ -307,7 +356,18 @@ int isBetweenEitherOrder(int x, int a, int b) {
  *   Rating: 7
  */
 int mul5Sat(int x) {
-  return 13;
+  /* 计算 429496729 = 0x19999999 减去 x 的绝对值，直接求 -|x| 以避免 0x80000000 问题 */
+  int s = ~(x >> 31);
+  int r = (x << 2) + x;
+  int a = (x ^ s) + (s & 1);
+  
+  int c = 0x19;
+  c = c << 8 | 0x99;
+  c = c << 8 | 0x99;
+  c = c << 8 | 0x99;
+  c = (c + a) >> 31;
+
+  return (c & ((1 << 31) + s)) | (~c & r);
 }
 
 // P14
@@ -320,7 +380,24 @@ int mul5Sat(int x) {
  *   Rating: 7
  */
 int classifyAdd3(int x, int y, int z) {
-  return 14;
+  /* 使用 32b + 29b 的数，需保证两部分同号 */
+  int msk = ~(7 << 29);
+  int s29b = (x & msk) + (y & msk) + (z & msk);
+  int s32b = (x >> 29) + (y >> 29) + (z >> 29);
+
+  int o = s29b >> 29;
+  s32b = s32b + o;
+  s29b = s29b + ~(o << 29) + 1;
+  
+  int has0 = !s29b | !s32b;
+  int adjust = ((!has0 << 31) & (s29b ^ s32b)) >> 31;
+  int s29bs = s29b >> 31;
+  s32b = s32b + (adjust & s29bs);
+  s29b = s29b + (adjust & (~(s29bs << 29) + 1));
+  int s32bs = s32b >> 31;
+  int ans0 = ((3 - s32b) >> 31) & 1;
+  int ans1 = ((4 + s32b) >> 31) | (((!(4 ^ s32b) & !!s29b) << 31) >> 31);
+  return (~s32bs & ans0) | (s32bs & ans1);
 }
 
 // P15
@@ -337,7 +414,29 @@ int classifyAdd3(int x, int y, int z) {
  *   Rating: 7
  */
 unsigned floatScaleThreeHalves(unsigned uf) {
-  return 15;
+  /* 实现的相当不优美，次正规数、e == 255的情况等需要分类讨论 */
+  unsigned s = uf & 0x80000000, e = (uf >> 23) & 0xff, m = uf & 0x007fffff;
+  if (e == 255 || (e == 0 && m == 0)) return uf;
+  if (e >= 1) m = m | 0x00800000;
+  m = m * 3;
+  if (m >> 25)
+  {
+    m = m + 2;
+    unsigned a = !(m & 3);
+    m = m >> 2;
+    m = m ^ (m & a);
+    e = e + 1;
+    if (e == 0xff) m = 0;
+  }
+  else
+  {
+    m = m + 1;
+    unsigned a = !(m & 1);
+    m = m >> 1;
+    m = m ^ (m & a);
+    if (e == 0 && (m >> 23)) e = e + 1;
+  }
+  return s | (e << 23) | (m & 0x007fffff);
 }
 
 // P16
@@ -353,7 +452,30 @@ unsigned floatScaleThreeHalves(unsigned uf) {
  *   Rating: 10
  */
 unsigned floatRoundEven(unsigned uf) {
-  return 16;
+  /* 先特判结果为 inf nan 0 的情况，然后再做 roundEvenPow2 */
+  unsigned s = uf & 0x80000000, e = (uf >> 23) & 0xff, m = uf & 0x007fffff;
+  if (e >= 150) return uf;
+  if (e <= 125 || (e == 126 && m == 0)) return s;
+  m = (m | 0x00800000) + (1 << (149 - e));
+  if (m >> 24) // 至多 1 次，无需 while
+  {
+    m = m + (1 << (149 - e));
+    unsigned msk = (1 << (151 - e)) - 1;
+    unsigned a = !(m & msk);
+    m = m >> (151 - e);
+    m = m ^ (m & a);
+    m = m << (150 - e);
+    e = e + 1;
+  }
+  else
+  {
+    unsigned msk = (1 << (150 - e)) - 1;
+    unsigned a = !(m & msk);
+    m = m >> (150 - e);
+    m = m ^ (m & a);
+    m = m << (150 - e);
+  }
+  return s | (e << 23) | (m & 0x007fffff);
 }
 
 // P17
@@ -367,7 +489,41 @@ unsigned floatRoundEven(unsigned uf) {
  *   Rating: 10
  */
 unsigned float_i2f(int x) {
-  return 17;
+  /* 实现的相当不优美，先求出这个数的对数，分类讨论，对于 l > 23 的情况需 roundEvenPow2 */
+  unsigned s = x & 0x80000000, e = 0, m = 0;
+  unsigned y = x;
+  if (s) y = -y;
+  int l = -1;
+  unsigned t = y;
+  
+  while (t) t = t >> 1, l = l + 1;
+  // 可以通过枚举 16 8 4 2 1 做倍增，避免用 while，但是会多用 13 次运算
+  // if (t >> 16) t = t >> 16, l = l + 16;
+  // if (t >> 8) t = t >> 8, l = l + 8;
+  // if (t >> 4) t = t >> 4, l = l + 4;
+  // if (t >> 2) t = t >> 2, l = l + 2;
+  // if (t >> 1) t = t >> 1, l = l + 1;
+  
+  if (l > 23)
+  {
+    m = y + (1 << (l - 24));
+    if (l < 31 && m >> (l + 1)) // 至多 1 次，无需 while
+    {
+      m = m + (1 << (l - 24));
+      l = l + 1;
+    }
+    unsigned msk = (1 << (l - 23)) - 1;
+    unsigned a = !(m & msk);
+    m = m >> (l - 23);
+    m = m ^ (m & a);
+    e = 127 + l;
+  }
+  else if (l >= 0)
+  {
+    m = y << (23 - l);
+    e = 127 + l;
+  }
+  return s | (e << 23) | (m & 0x007fffff);
 }
 
 
@@ -381,7 +537,19 @@ unsigned float_i2f(int x) {
  *   Rating: 10
  */
 int bitCount(int x) {
-  return 18;
+  /* 无需单独处理符号位，可以将 x 视作 32 个 1b 数，相邻 2 个 1b 数相加即可得到 16 个 2b 数，重复以上过程即可，创建0x55555555、0x33333333、0x0f0f0f0f 等 mask，mask 的构造可以一起做，从而降低次数 */
+  int m16 = 0xff | (0xff << 8); 
+  int m8 = m16 ^ (m16 << 8);
+  int m4 = m8 ^ (m8 << 4);
+  int m2 = m4 ^ (m4 << 2);
+  int m1 = m2 ^ (m2 << 1);
+
+  x = (x & m1) + ((x >> 1) & m1);
+  x = (x & m2) + ((x >> 2) & m2);
+  x = (x & m4) + ((x >> 4) & m4);
+  x = (x & m8) + ((x >> 8) & m8);
+  x = (x & m16) + (x >> 16);
+  return x;
 }
 
 // P19
@@ -393,7 +561,18 @@ int bitCount(int x) {
  *   Max ops: 34
  *   Rating: 10
  */
-int bitReverse(int x)
-{
-  return 19;
+int bitReverse(int x) {
+  /* 类似 swapNibblePairs，多次创建 mask 然后做交换，mask 的构造可以一起做，从而降低次数 */
+  int m16 = 0xff | (0xff << 8); 
+  int m8 = m16 ^ (m16 << 8);
+  int m4 = m8 ^ (m8 << 4);
+  int m2 = m4 ^ (m4 << 2);
+  int m1 = m2 ^ (m2 << 1);
+
+  x = ((x & m1) << 1) | ((x >> 1) & m1);
+  x = ((x & m2) << 2) | ((x >> 2) & m2);
+  x = ((x & m4) << 4) | ((x >> 4) & m4);
+  x = ((x & m8) << 8) | ((x >> 8) & m8);
+  x = (x << 16) | ((x >> 16) & m16);
+  return x;
 }
