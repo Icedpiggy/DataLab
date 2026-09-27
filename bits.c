@@ -205,7 +205,7 @@ int copyByteWithin(int x, int src, int dst) {
  *   Rating: 4
  */
 int logicalShift(int x, int n) {
-  /* 逻辑右移，需要把符号位删掉，在算术右移的基础上仅保留低 32 - n 位 */
+  /* 逻辑右移，需要把符号位单独处理，剩下的部分正常算术右移 */
   int s = (x >> 31) & 1;
   x = x ^ (s << 31);
   return x >> n | (s << (32 + ~n)) ;
@@ -237,7 +237,7 @@ int swapNibblePairs(int x) {
  *   Rating: 4
  */
 int secondLowestZeroBit(int x) {
-  /* x 的 low1bit 为 x & -x = x & (~x + 1)，那么 low0bit 为 ~x & (x + 1)，先得到将末位 0 置 1 的 y，再做一次 low1bit */
+  /* x 的 low1bit 为 x & -x = x & (~x + 1)，那么 low0bit 为 ~x & (x + 1)，先得到将末位 0 置 1 的 y，再做一次 low0bit */
   int y = x ^ (~x & (x + 1));
   return ~y & (y + 1);
 }
@@ -416,7 +416,7 @@ int classifyAdd3(int x, int y, int z) {
 unsigned floatScaleThreeHalves(unsigned uf) {
   /* 实现的相当不优美，次正规数、e == 255的情况等需要分类讨论 */
   unsigned s = uf & 0x80000000, e = (uf >> 23) & 0xff, m = uf & 0x007fffff;
-  if (e == 255 || (e == 0 && m == 0)) return uf;
+  if (e == 255) return uf;
   if (e >= 1) m = m | 0x00800000;
   m = m * 3;
   if (m >> 25)
